@@ -1,3 +1,4 @@
+#Set up dependincies
 import datetime as dt
 import numpy as np
 import pandas as pd
@@ -10,18 +11,24 @@ from sqlalchemy import create_engine, func
 
 from flask import Flask, jsonify
 
+#Set up data base
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
+#Reflect into a new model
 Base = automap_base()
 
+#Reflect tables
 Base.prepare(engine, reflect=True)
 
+#save references to each table
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
-
+#Set up flask
 app = Flask(__name__)
 
+#Create routes
+#Home route
 @app.route("/")
 def welcome():
 
@@ -35,17 +42,23 @@ def welcome():
         f"/api/v1.0/start/end" 
     )
 
+#precipitation route
 @app.route("/api/v1.0/precipitation")
 def precipitation():
+    #start session
     session = Session(engine)
+
+    #found most recent date and one year prior to that date in data base
     recent_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first().date
     year_ago = dt.datetime.strptime(recent_date, '%Y-%m-%d') - dt.timedelta(days=365)
     
+    #Query data base
     results = session.query(Measurement.date, Measurement.prcp).\
                         filter(Measurement.date >= year_ago).\
                         order_by(Measurement.date).all()
     session.close()
     
+    #Stored results into a list of necessary data
     precipitation_list = []
     for date, prcp in results:
         prcp_dict = {}
@@ -115,6 +128,6 @@ def stats(start=None, end=None):
     return jsonify(temp)
 
 
-#TMIN, TAVG, TMAX
+
 if __name__ == '__main__':
     app.run(debug=True)
